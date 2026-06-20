@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>シャーロック・アイ — 一枚の写真から、すべてを観察する</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Zen+Old+Mincho:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --green:#13201a; --green-2:#1b2c24; --green-light:#2d4a3d; --line:#33473b;
+    --brass:#c8a44d; --brass-d:#a8842f; --brass-light:#e8c875;
+    --oxblood:#7c2230; --parch:#ece3cf; --parch-2:#ddd0b4; --ink:#23201a; --muted:#a99f86;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(130% 90% at 50% -15%, #1c2d24 0%, var(--green) 58%) fixed;
+    color:var(--parch); font-family:"Zen Kaku Gothic New",sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:34px 20px 84px;}
+
+  .eyebrow{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:1px solid var(--line);padding-bottom:11px;}
+  .eyebrow .latin{font-family:"Playfair Display",serif;font-style:italic;font-weight:500;
+    font-size:14px;letter-spacing:.04em;color:var(--brass);}
+  .eyebrow .no{font-size:11px;letter-spacing:.26em;color:var(--muted);
+    font-variant-numeric:tabular-nums;text-transform:uppercase;}
+
+  .titlebar{display:flex;justify-content:space-between;align-items:flex-end;
+    gap:18px;flex-wrap:wrap;margin-top:24px;}
+  h1{font-family:"Zen Old Mincho",serif;font-weight:900;
+    font-size:clamp(38px,8vw,66px);line-height:1;letter-spacing:.05em;margin:0;color:var(--parch);}
+  h1 .dot{color:var(--brass-light);}
+  .lead{font-family:"Zen Old Mincho",serif;color:var(--muted);
+    font-size:15px;letter-spacing:.08em;margin:14px 0 30px;}
+  .lens-mark{flex:0 0 auto;opacity:.9;transition:transform 0.3s ease-out;}
+  .lens-mark:hover{transform:scale(1.08) rotate(8deg);}
+  .lens-mark svg{display:block;}
+
+  .study{background:linear-gradient(135deg,rgba(30,48,40,0.7),rgba(23,38,32,0.7));
+    backdrop-filter:blur(10px);border:1px solid rgba(51,71,59,0.6);border-radius:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(200,164,77,0.1);
+    padding:24px;margin-bottom:24px;transition:all 0.3s ease-out;}
+  .study:hover{border-color:rgba(51,71,59,0.8);box-shadow:0 12px 48px rgba(0,0,0,0.4),inset 0 1px 0 rgba(200,164,77,0.15);}
+
+  /* 探偵を選ぶ（⑤） */
+  .picker-lab{font-size:11px;letter-spacing:.24em;color:var(--muted);
+    text-transform:uppercase;margin-bottom:10px;}
+  .persona-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .chip{font-family:inherit;font-size:13px;letter-spacing:.05em;padding:9px 16px;
+    border-radius:22px;border:1px solid var(--line);background:transparent;
+    color:var(--muted);cursor:pointer;transition:all 0.25s ease-out;}
+  .chip:hover{border-color:var(--brass);color:var(--parch);transform:translateY(-2px);box-shadow:0 4px 12px rgba(200,164,77,0.15);}
+  .chip.on{background:linear-gradient(135deg,#d9b75e,var(--brass-d));border-color:var(--brass);color:#1a130a;font-weight:700;box-shadow:0 4px 12px rgba(200,164,77,0.25);transform:translateY(-2px);}
+  .persona-note{font-family:"Zen Old Mincho",serif;font-size:13px;color:var(--brass-light);
+    letter-spacing:.06em;margin:-12px 0 20px;opacity:.92;}
+
+  .drop{border:1.5px dashed #4f6a5b;border-radius:8px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:12px;cursor:pointer;color:var(--muted);
+    transition:all 0.25s ease-out;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(27,44,36,0.5),rgba(19,32,26,0.5));
+    min-height:240px;}
+  .drop:hover,.drop.drag{border-color:var(--brass);background:linear-gradient(135deg,rgba(35,54,44,0.7),rgba(25,40,32,0.7));box-shadow:0 0 20px rgba(200,164,77,0.15);}
+  .drop .hint{font-size:13px;letter-spacing:.06em;}
+  .drop .glyph svg{width:48px;height:48px;stroke:#6f8a7b;transition:all 0.25s ease-out;}
+  .drop:hover .glyph svg{stroke:var(--brass);transform:scale(1.1);}
+  .drop img{width:100%;height:auto;max-width:100%;max-height:600px;object-fit:scale-down;}
+  .drop.has-img{border-style:solid;border-color:var(--line);background:linear-gradient(135deg,rgba(27,44,36,0.2),rgba(19,32,26,0.2));padding:16px;}
+  .drop.has-img:hover{background:linear-gradient(135deg,rgba(35,54,44,0.3),rgba(25,40,32,0.3));}
+  .corner{position:absolute;width:22px;height:22px;border:2px solid var(--brass);z-index:2;transition:all 0.25s ease-out;}
+  .corner.tl{top:8px;left:8px;border-right:none;border-bottom:none;}
+  .corner.br{bottom:8px;right:8px;border-left:none;border-top:none;}
+  .drop:hover .corner{border-color:var(--brass-light);box-shadow:0 0 8px rgba(200,164,77,0.3);}
+
+  /* 主張（⑥） */
+  .claim{margin-top:18px;}
+  .claim label{display:block;font-size:12px;color:var(--muted);letter-spacing:.06em;margin-bottom:7px;}
+  .claim input{width:100%;background:linear-gradient(135deg,rgba(20,32,26,0.6),rgba(15,28,21,0.6));
+    backdrop-filter:blur(5px);border:1px solid rgba(51,71,59,0.6);border-radius:6px;
+    color:var(--parch);font-family:inherit;font-size:14px;padding:12px 14px;
+    transition:all 0.25s ease-out;}
+  .claim input:hover{border-color:rgba(51,71,59,0.8);background:linear-gradient(135deg,rgba(20,32,26,0.8),rgba(15,28,21,0.8));}
+  .claim input:focus{border-color:var(--brass);outline:none;background:linear-gradient(135deg,rgba(20,32,26,0.9),rgba(15,28,21,0.9));box-shadow:0 0 16px rgba(200,164,77,0.2);}
+  .claim input::placeholder{color:#5f7567;}
+
+  .controls{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap;}
+  button.go{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:15px;
+    letter-spacing:.14em;color:#1a130a;background:linear-gradient(135deg,#d9b75e,var(--brass-d));
+    border:none;border-radius:6px;padding:13px 28px;cursor:pointer;
+    box-shadow:0 4px 15px rgba(200,164,77,0.25),inset 0 1px 0 rgba(255,255,255,0.2);
+    transition:all 0.25s ease-out;position:relative;overflow:hidden;}
+  button.go::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transition:left 0.5s ease-out;}
+  button.go:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(200,164,77,0.35),inset 0 1px 0 rgba(255,255,255,0.3);}
+  button.go:active{transform:translateY(0);box-shadow:0 2px 8px rgba(200,164,77,0.25),inset 0 2px 4px rgba(0,0,0,0.2);}
+  button.go:disabled{background:#3a4a40;color:#7d8a80;box-shadow:none;cursor:not-allowed;transform:none;}
+  .reset{background:rgba(255,255,255,0.05);border:1px solid var(--line);color:var(--muted);font-size:13px;
+    padding:11px 16px;border-radius:6px;cursor:pointer;letter-spacing:.08em;font-family:inherit;
+    transition:all 0.25s ease-out;}
+  .reset:hover{border-color:var(--brass);color:var(--parch);background:rgba(200,164,77,0.08);transform:translateY(-1px);}
+  .reset:active{transform:translateY(0);}
+
+  .scanning{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;
+    letter-spacing:.08em;padding:6px 2px;font-family:"Zen Old Mincho",serif;}
+  .scanning .lens{width:20px;height:20px;animation:sweep 1.4s infinite ease-in-out;}
+  .scanning .lens svg{width:20px;height:20px;stroke:var(--brass);filter:drop-shadow(0 0 4px rgba(200,164,77,0.3));}
+  @keyframes sweep{0%,100%{transform:translateX(-3px) rotate(-8deg);}50%{transform:translateX(3px) rotate(8deg);}}
+  .err{color:#e3a7ad;font-size:14px;letter-spacing:.04em;padding:6px 2px;font-family:"Zen Old Mincho",serif;}
+
+  .verdict-eye{font-family:"Playfair Display",serif;font-style:italic;
+    color:var(--brass-light);font-size:14px;letter-spacing:.04em;margin:4px 0 8px;animation:fadeInDown 0.6s ease-out;}
+  .verdict{font-family:"Zen Old Mincho",serif;font-weight:900;
+    font-size:clamp(24px,5vw,38px);line-height:1.28;letter-spacing:.03em;color:var(--parch);margin:0 0 14px;animation:fadeInDown 0.7s ease-out 0.1s both;}
+  .remark{border-left:3px solid var(--brass);padding:4px 0 4px 16px;color:var(--parch-2);
+    font-size:15px;line-height:1.75;font-family:"Zen Old Mincho",serif;margin:0 0 18px;animation:fadeInUp 0.7s ease-out 0.2s both;}
+  @keyframes fadeInDown{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+  /* アリバイ崩し（⑥） */
+  .rebuttal{background:linear-gradient(135deg,rgba(42,20,25,0.6),rgba(28,16,19,0.6));
+    backdrop-filter:blur(8px);border:1px solid rgba(124,34,48,0.5);border-left:5px solid var(--oxblood);
+    border-radius:6px;padding:16px 18px;margin:0 0 24px;transition:all 0.25s ease-out;
+    box-shadow:0 4px 15px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.05);}
+  .rebuttal:hover{border-color:rgba(124,34,48,0.7);background:linear-gradient(135deg,rgba(42,20,25,0.8),rgba(28,16,19,0.8));}
+  .rebuttal .lab{font-family:"Playfair Display",serif;font-style:italic;
+    color:#d98a92;font-size:13px;letter-spacing:.04em;margin-bottom:7px;}
+  .rebuttal .txt{font-family:"Zen Old Mincho",serif;font-size:16px;line-height:1.65;color:var(--parch);}
+
+  .tally{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:linear-gradient(135deg,var(--green-2),var(--green));backdrop-filter:blur(5px);
+    border:1px solid rgba(51,71,59,0.6);border-radius:8px;
+    padding:12px 16px;margin:0 0 24px;font-size:13px;color:var(--muted);letter-spacing:.06em;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:all 0.25s ease-out;}
+  .tally:hover{border-color:rgba(51,71,59,0.8);}
+  .tally b{color:var(--brass-light);font-variant-numeric:tabular-nums;}
+  .tally .sep{color:var(--line);}
+
+  .cards{display:flex;flex-direction:column;gap:16px;}
+  .card{background:linear-gradient(135deg,rgba(236,227,207,0.95),rgba(221,208,180,0.92));
+    backdrop-filter:blur(10px);color:var(--ink);border-radius:8px;padding:18px 20px 14px;
+    position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.3);
+    border:1px solid rgba(200,164,77,0.2);border-left:5px solid var(--brass);
+    opacity:0;transform:translateY(14px);animation:rise 0.5s forwards;transition:all 0.3s ease-out;}
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+  .card:hover{transform:translateY(-4px);box-shadow:0 12px 48px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.4);border-color:rgba(200,164,77,0.4);}
+  .card.judged-hit{border-left-color:#2f7d4f;background:linear-gradient(135deg,rgba(47,125,79,0.08),rgba(47,125,79,0.04));}
+  .card.judged-hit:hover{border-left-color:#3d9e63;}
+  .card.judged-miss{border-left-color:var(--oxblood);background:linear-gradient(135deg,rgba(124,34,48,0.08),rgba(124,34,48,0.04));}
+  .card.judged-miss:hover{border-left-color:#a8304a;}
+  .card .tag{position:absolute;top:-11px;left:16px;background:linear-gradient(135deg,var(--green),var(--green-2));
+    color:var(--brass-light);font-family:"Playfair Display",serif;font-style:italic;font-size:14px;
+    padding:4px 12px;border-radius:3px;border:1px solid rgba(200,164,77,0.4);
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:all 0.25s ease-out;}
+  .card:hover .tag{border-color:rgba(200,164,77,0.6);box-shadow:0 4px 12px rgba(200,164,77,0.2);}
+  .card .label{font-size:10px;letter-spacing:.28em;color:#8c7f63;text-transform:uppercase;margin-bottom:4px;}
+  .card .obs{font-size:14px;line-height:1.6;margin:0 0 12px;}
+  .card .ded{font-family:"Zen Old Mincho",serif;font-size:16px;line-height:1.65;margin:0 0 12px;font-weight:600;}
+  .conf{display:flex;align-items:center;gap:10px;transition:all 0.25s ease-out;}
+  .card:hover .conf{color:#6b5d46;}
+  .conf .lab{font-size:10px;letter-spacing:.22em;color:#8c7f63;}
+  .conf .pips{display:flex;gap:5px;}
+  .pip{width:20px;height:7px;border-radius:1px;background:#cabf9f;transition:all 0.25s ease-out;}
+  .pip.on{background:var(--brass-d);box-shadow:0 0 4px rgba(168,132,47,0.4);}
+  .conf .word{font-size:12px;color:#8c7f63;letter-spacing:.1em;}
+  .judge{display:flex;align-items:center;gap:10px;margin-top:14px;
+    border-top:1px dashed #c3b693;padding-top:12px;flex-wrap:wrap;}
+  .judge .q{font-size:12px;color:#8c7f63;letter-spacing:.1em;}
+  .jbtn{font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.08em;
+    padding:7px 16px;border-radius:4px;cursor:pointer;
+    border:1px solid #b3a884;background:#f3ecdb;color:#4a4434;transition:all 0.25s ease-out;}
+  .jbtn:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+  .jbtn:active{transform:translateY(0);}
+  .jbtn.hit.on{background:linear-gradient(135deg,#2f7d4f,#247d4f);border-color:#2f7d4f;color:#fff;box-shadow:0 4px 12px rgba(47,125,79,0.3);}
+  .jbtn.miss.on{background:linear-gradient(135deg,var(--oxblood),#953a50);border-color:var(--oxblood);color:#fff;box-shadow:0 4px 12px rgba(124,34,48,0.3);}
+  .card.judged .jbtn:not(.on){opacity:.3;}
+
+  .medal-wrap{display:none;margin-top:30px;text-align:center;animation:popIn 0.6s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes popIn{from{opacity:0;transform:scale(0.8);}to{opacity:1;transform:scale(1);}}
+  .medal{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    width:168px;height:168px;border-radius:50%;border:3px double var(--brass);
+    background:radial-gradient(circle at 50% 35%,#23362c,#15211a);
+    box-shadow:0 0 0 6px rgba(200,164,77,0.15),0 12px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.1);
+    transition:all 0.3s ease-out;}
+  .medal:hover{transform:scale(1.05);box-shadow:0 0 0 8px rgba(200,164,77,0.2),0 16px 48px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.15);}
+  .medal .rate{font-family:"Playfair Display",serif;font-size:46px;color:var(--brass-light);line-height:1;}
+  .medal .rate small{font-size:20px;color:var(--muted);}
+  .medal .of{font-size:11px;letter-spacing:.24em;color:var(--muted);margin-top:6px;text-transform:uppercase;}
+  .title-text{font-family:"Zen Old Mincho",serif;font-weight:900;font-size:24px;
+    letter-spacing:.1em;margin:18px 0 4px;color:var(--parch);animation:fadeInDown 0.6s ease-out 0.2s both;}
+  .title-text.low{color:var(--oxblood);}
+  .title-sub{font-size:13px;color:var(--muted);font-family:"Zen Old Mincho",serif;animation:fadeInDown 0.6s ease-out 0.3s both;}
+
+  /* 物語にする（⑧） */
+  .story-cta{margin-top:34px;text-align:center;}
+  .story-btn{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:14px;
+    letter-spacing:.12em;color:var(--brass);background:linear-gradient(135deg,rgba(200,164,77,0.1),rgba(200,164,77,0.05));
+    backdrop-filter:blur(5px);border:1px solid rgba(200,164,77,0.4);
+    border-radius:6px;padding:12px 24px;cursor:pointer;transition:all 0.25s ease-out;}
+  .story-btn:hover{background:linear-gradient(135deg,rgba(200,164,77,0.15),rgba(200,164,77,0.1));
+    border-color:rgba(200,164,77,0.6);transform:translateY(-2px);box-shadow:0 4px 12px rgba(200,164,77,0.15);}
+  .story-btn:active{transform:translateY(0);}
+  .story-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .story-loading{margin-top:14px;color:var(--muted);font-size:13px;
+    font-family:"Zen Old Mincho",serif;letter-spacing:.08em;}
+  .story-panel{margin-top:20px;background:linear-gradient(135deg,rgba(236,227,207,0.95),rgba(221,208,180,0.92));
+    backdrop-filter:blur(10px);color:var(--ink);border-radius:8px;padding:24px 26px;text-align:left;
+    box-shadow:0 8px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.3);
+    border:1px solid rgba(200,164,77,0.2);border-top:4px solid var(--brass);display:none;animation:rise 0.5s ease-out;}
+  .story-panel .lab{font-family:"Playfair Display",serif;font-style:italic;
+    color:#8c7f63;font-size:13px;margin-bottom:12px;}
+  .story-panel .body{font-family:"Zen Old Mincho",serif;font-size:16px;line-height:1.95;
+    letter-spacing:.02em;white-space:pre-wrap;color:#4a4434;}
+
+  .footnote{margin-top:36px;color:#6f8576;font-size:11px;letter-spacing:.06em;
+    text-align:center;line-height:1.8;}
+
+  @media (prefers-reduced-motion:reduce){
+    .card,.medal-wrap,.story-panel{animation:none;opacity:1;transform:none;}
+    .scanning .lens{animation:none;}
+    *{transition:none !important;}
+  }
+  @media (max-width:640px){
+    .wrap{padding:24px 16px 60px;}
+    .controls{gap:8px;}
+    button.go{padding:11px 20px;font-size:14px;}
+    .drop{max-height:300px;}
+    .card{padding:14px 16px 12px;}
+  }
+  :focus-visible{outline:2px solid var(--brass);outline-offset:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">
+    <span class="latin">The Art of Observation</span>
+    <span class="no" id="caseNo">Case ————</span>
+  </div>
+
+  <div class="titlebar">
+    <div>
+      <h1>シャーロック・アイ</h1>
+      <p class="lead">一枚の写真から、すべてを観察する。— 写ったものから、人と物語を推理する。</p>
+    </div>
+    <span class="lens-mark" aria-hidden="true">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <circle cx="27" cy="27" r="17" stroke="#c8a44d" stroke-width="2.5"/>
+        <line x1="39" y1="39" x2="56" y2="56" stroke="#c8a44d" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="27" cy="27" r="10" stroke="#c8a44d" stroke-width="1" opacity=".5"/>
+      </svg>
+    </span>
+  </div>
+
+  <div class="study">
+    <div class="picker-lab">探偵を選ぶ</div>
+    <div class="persona-row" id="personaRow">
+      <button class="chip on" data-p="holmes" type="button">ホームズ</button>
+      <button class="chip" data-p="profiler" type="button">プロファイラー</button>
+      <button class="chip" data-p="forensic" type="button">鑑識官</button>
+      <button class="chip" data-p="noir" type="button">裏稼業</button>
+    </div>
+    <div class="persona-note" id="personaNote">物証と論理で、行動を逆算する。</div>
+
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="写真を選ぶ">
+      <span class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none">
+          <circle cx="20" cy="20" r="13" stroke-width="2.5"/>
+          <line x1="29.5" y1="29.5" x2="42" y2="42" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="hint">写真を、ここへ — どんな一枚でも</span>
+      <span class="hint" style="font-size:11px;opacity:.75;">クリック、またはドラッグ＆ドロップ</span>
+    </div>
+    <input type="file" id="file" accept="image/*" hidden />
+
+    <div class="claim">
+      <label for="claim">あなたの主張（任意）— 探偵が写真から矛盾を突きます</label>
+      <input id="claim" type="text" placeholder="例：私は几帳面な人間です" />
+    </div>
+
+    <div class="controls">
+      <button class="go" id="go" disabled>観察を始める</button>
+      <button class="reset" id="reset" hidden>別の写真にする</button>
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div id="result" hidden></div>
+
+  <p class="footnote">
+    AI（Claude）が写真を観察し、写った人や物から推理します。<br>
+    探偵を選び、主張を入力し、答え合わせのあとは一枚を物語に仕立てられます。
+  </p>
+
+</div>
+
+<script>
+(function(){
+  var fileInput=document.getElementById('file');
+  var drop=document.getElementById('drop');
+  var goBtn=document.getElementById('go');
+  var resetBtn=document.getElementById('reset');
+  var statusEl=document.getElementById('status');
+  var resultEl=document.getElementById('result');
+  var caseNoEl=document.getElementById('caseNo');
+  var personaRow=document.getElementById('personaRow');
+  var claimEl=document.getElementById('claim');
+
+  var imgData=null, imgMime=null;
+  var judged=[], total=0;
+  var persona='holmes';
+  var last=null; // {verdict, clues, persona}
+
+  var PERSONAS={
+    holmes:{name:'ホームズ', spec:'物証と論理で、行動を逆算する。',
+      lens:'物理的な物証と論理だけに注目する。物の配置・摩耗・左右・順序・角度といった客観的事実から、職業や直近の行動を一段ずつ論理的に逆算する。感情や物語、人柄の善悪には踏み込まない。',
+      voice:'理知的で古風な英国紳士の口調。「〜のはずだ。なぜなら〜」と論理を一段ずつ積み上げて断定する。'},
+    profiler:{name:'プロファイラー', spec:'物より心を読み、内面を言い当てる。',
+      lens:'物そのものより、持ち主の「心」を読む。性格・欲求・コンプレックス・対人関係・今の感情状態を、選択や置き方の癖から推理する。時刻や物理的事実ではなく、内面の推理を最優先する。',
+      voice:'静かで分析的、やや冷たい臨床心理家の口調。「この人物は〜を抱えている」と内面を言い当てる。'},
+    forensic:{name:'鑑識官', spec:'光・埃・摩耗から、時刻と物理を割り出す。',
+      lens:'光・影・埃・色あせ・摩耗・配置から、撮影時刻・経過時間・使用回数・物理的状況を技術的に割り出す。人柄や心情には一切踏み込まず、「いつ・どれくらい・どんな物理現象が起きたか」に徹し、可能なら数値で示す。',
+      voice:'クリニカルで簡潔な捜査報告の口調。専門的に淡々と述べる。'},
+    noir:{name:'裏稼業', spec:'金・秘密・弱みで、動機を嗅ぎ当てる。',
+      lens:'金・秘密・嘘・弱み・欲望といった「世の裏側」を嗅ぎ取る。この人物が何に困り、何を隠し、何を欲しているか——動機と弱点を読む。きれいごとは見ない。',
+      voice:'ハードボイルドな乾いた口調。一人称は「俺」。短い断定と、ひとさじの皮肉。'}
+  };
+
+  (function(){
+    var d=new Date(), p=function(n){return String(n).padStart(2,'0');};
+    caseNoEl.textContent='Case '+d.getFullYear()+'-'+p(d.getMonth()+1)+p(d.getDate())
+      +'-'+Math.floor(Math.random()*90+10);
+  })();
+
+  var lensSVG='<svg viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="2"/><line x1="15" y1="15" x2="21" y2="21" stroke-width="2.5" stroke-linecap="round"/></svg>';
+
+  // 探偵切替（⑤）
+  personaRow.addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(!b) return;
+    persona=b.dataset.p;
+    Array.prototype.forEach.call(personaRow.querySelectorAll('.chip'),function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    document.getElementById('personaNote').textContent=PERSONAS[persona].spec;
+  });
+
+  function pick(){ fileInput.click(); }
+  drop.addEventListener('click',pick);
+  drop.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();} });
+  ['dragenter','dragover'].forEach(function(ev){
+    drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(ev){
+    drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('drag');});});
+  drop.addEventListener('drop',function(e){
+    var f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) loadFile(f);});
+  fileInput.addEventListener('change',function(){ if(fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+  function loadFile(f){
+    if(!/^image\//.test(f.type)){ showError('画像を選んでくれたまえ。'); return; }
+    var r=new FileReader();
+    r.onload=function(){
+      var url=r.result; imgMime=f.type; imgData=url.split(',')[1];
+      drop.classList.add('has-img');
+      drop.innerHTML='<div class="corner tl"></div><div class="corner br"></div>'+
+        '<img src="'+url+'" alt="観察対象の写真" />';
+      goBtn.disabled=false; resetBtn.hidden=false;
+      statusEl.innerHTML=''; resultEl.hidden=true; resultEl.innerHTML='';
+    };
+    r.readAsDataURL(f);
+  }
+
+  resetBtn.addEventListener('click',function(){
+    imgData=null; imgMime=null;
+    drop.classList.remove('has-img');
+    drop.innerHTML='<span class="glyph" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none">'+
+      '<circle cx="20" cy="20" r="13" stroke-width="2.5"/>'+
+      '<line x1="29.5" y1="29.5" x2="42" y2="42" stroke-width="3.5" stroke-linecap="round"/></svg></span>'+
+      '<span class="hint">写真を、ここへ — どんな一枚でも</span>'+
+      '<span class="hint" style="font-size:11px;opacity:.75;">クリック、またはドラッグ＆ドロップ</span>';
+    goBtn.disabled=true; resetBtn.hidden=true;
+    statusEl.innerHTML=''; resultEl.hidden=true; resultEl.innerHTML='';
+  });
+
+  function showError(m){ statusEl.innerHTML='<div class="err">'+m+'</div>'; }
+  function showScanning(){
+    statusEl.innerHTML='<div class="scanning"><span class="lens">'+lensSVG+'</span>探偵が写真を観察している…</div>';
+  }
+
+  function buildSystem(claim){
+    var p=PERSONAS[persona];
+    var s='あなたは鋭い観察眼を持つ名探偵です。'+
+      '与えられた一枚の写真に写る手がかり（物・配置・状態・痕跡・身につけているもの・背景など）だけを根拠に、'+
+      'そこから読み取れる事実を推理してください。'+
+      '対象は写真によって変わります——持ち主や写った人物の人物像・習慣・職業・最近の出来事・'+
+      'その場で何が起きたか・撮られた状況など、写真から読み取れるものを推理対象にすること。'+
+      '断定的に推理し、写真に写っていないものは推測しないこと。'+
+      ' ★この探偵の着眼点（必ずこれだけに沿って観察・推理する）: '+p.lens+
+      ' 同じ写真でも、必ずこの着眼点に偏った推理をすること。別の探偵が見るような側面はあえて無視し、この探偵にしか見えない側面だけを言い当てること。'+
+      ' 探偵の口調: '+p.voice+' verdict・remark・各推理のobservationとdeduction、すべてこの着眼点と口調で書くこと。';
+    if(claim){
+      s+=' さらに、ユーザーは次の主張をしている:「'+claim+'」。'+
+         '写真の手がかりから、この主張と矛盾する点を一つ突き、"rebuttal"フィールドに鋭い反証を1〜2文で入れること'+
+         '（「しかし、〜」のように主張を崩す形で）。矛盾の根拠が写真にない場合のみ rebuttal は空文字にする。';
+    } else {
+      s+=' "rebuttal" は空文字にする。';
+    }
+    s+=' 出力は有効なJSONのみ。前置き・解説・コードフェンスは一切付けない。'+
+      '形式: {"verdict":"写真から読み取った人物像または状況を一言で（20字程度）",'+
+      '"remark":"名探偵としての一言（40字程度）",'+
+      '"rebuttal":"主張への反証（無ければ空文字）",'+
+      '"clues":[{"observation":"観察した具体的手がかり（25字程度）",'+
+      '"deduction":"そこから言える推理（断定形・35字程度）","confidence":"高|中|低"}]}。cluesは4つ。';
+    return s;
+  }
+
+  goBtn.addEventListener('click',analyze);
+
+  async function analyze(){
+    if(!imgData) return;
+    var claim=(claimEl.value||'').trim();
+    goBtn.disabled=true; resultEl.hidden=true; showScanning();
+    try{
+      var res=await fetch('/api/claude',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          imageBase64:imgData, mediaType:imgMime,
+          systemPrompt:buildSystem(claim), maxTokens:1000,
+          userPrompt:'この写真を観察し、読み取れることを推理せよ。'+
+            (claim?'ユーザーの主張「'+claim+'」との矛盾も突くこと。':'')+'JSONのみで答えること。'
+        })
+      });
+      var data=await res.json();
+      if(!res.ok){ throw new Error('観察失敗 '+res.status); }
+      var text=(data.content||[]).filter(function(b){return b.type==='text';})
+                .map(function(b){return b.text;}).join('');
+      var parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+      render(parsed);
+    }catch(e){
+      console.error(e);
+      showError('この一枚は、まだ私には読めなかった。別の写真で試したまえ。');
+    }finally{ goBtn.disabled=false; }
+  }
+
+  function pips(c){ var n=c==='高'?3:c==='中'?2:1,s=''; for(var i=1;i<=3;i++) s+='<span class="pip'+(i<=n?' on':'')+'"></span>'; return s; }
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function render(d){
+    statusEl.innerHTML='';
+    var clues=d.clues||[]; total=clues.length;
+    judged=clues.map(function(){return null;});
+    last={verdict:d.verdict,clues:clues,persona:persona};
+    var marks=['I','II','III','IV','V','VI'];
+
+    var rebuttalHTML='';
+    if(d.rebuttal && String(d.rebuttal).trim()){
+      rebuttalHTML='<div class="rebuttal"><div class="lab">Alibi, Broken — アリバイ崩し</div>'+
+        '<div class="txt">'+esc(d.rebuttal)+'</div></div>';
+    }
+
+    var cardsHTML=clues.map(function(c,i){
+      return '<div class="card" data-idx="'+i+'" style="animation-delay:'+(i*0.12)+'s">'+
+        '<span class="tag">'+(marks[i]||(i+1))+'</span>'+
+        '<div class="label">観察</div><p class="obs">'+esc(c.observation)+'</p>'+
+        '<div class="label">推理</div><p class="ded">'+esc(c.deduction)+'</p>'+
+        '<div class="conf"><span class="lab">確信度</span><span class="pips">'+pips(c.confidence)+'</span>'+
+          '<span class="word">'+esc(c.confidence)+'</span></div>'+
+        '<div class="judge"><span class="q">この推理、合っている？</span>'+
+          '<button class="jbtn hit" data-idx="'+i+'" data-v="hit" type="button">当たり</button>'+
+          '<button class="jbtn miss" data-idx="'+i+'" data-v="miss" type="button">外れ</button>'+
+        '</div></div>';
+    }).join('');
+
+    resultEl.innerHTML=
+      '<div class="verdict-eye">Deduction by '+esc(PERSONAS[persona].name)+'</div>'+
+      '<h2 class="verdict">'+esc(d.verdict)+'</h2>'+
+      '<p class="remark">'+esc(d.remark)+'</p>'+
+      rebuttalHTML+
+      '<div class="tally" id="tally">答え合わせ <b id="done">0</b>/<b>'+total+'</b> 判定済'+
+        '<span class="sep">｜</span>的中 <b id="hits">0</b></div>'+
+      '<div class="cards">'+cardsHTML+'</div>'+
+      '<div class="medal-wrap" id="medalWrap"></div>'+
+      '<div class="story-cta"><button class="story-btn" id="storyBtn" type="button">この一枚を物語にする</button>'+
+        '<div id="storyArea"></div></div>';
+    resultEl.hidden=false;
+
+    Array.prototype.forEach.call(resultEl.querySelectorAll('.jbtn'),function(btn){
+      btn.addEventListener('click',function(){
+        var i=+btn.dataset.idx, v=btn.dataset.v;
+        judged[i]=v;
+        var card=resultEl.querySelector('.card[data-idx="'+i+'"]');
+        card.classList.add('judged'); card.classList.remove('judged-hit','judged-miss');
+        card.classList.add(v==='hit'?'judged-hit':'judged-miss');
+        Array.prototype.forEach.call(card.querySelectorAll('.jbtn'),function(b){b.classList.remove('on');});
+        btn.classList.add('on');
+        updateTally();
+      });
+    });
+
+    document.getElementById('storyBtn').addEventListener('click',generateStory);
+    resultEl.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function updateTally(){
+    var done=judged.filter(function(x){return x!==null;}).length;
+    var hits=judged.filter(function(x){return x==='hit';}).length;
+    document.getElementById('done').textContent=done;
+    document.getElementById('hits').textContent=hits;
+    if(done===total) showMedal(hits);
+  }
+
+  function showMedal(hits){
+    var titles={
+      4:{t:'真打・名探偵',s:'完全なる観察眼。脱帽である。',low:false},
+      3:{t:'名 探 偵',s:'見事な推理。基本は外さない。',low:false},
+      2:{t:'探偵見習い',s:'光るものはある。精進したまえ。',low:false},
+      1:{t:'迷 探 偵',s:'たまには当たることもある。',low:true},
+      0:{t:'迷 探 偵',s:'今日の私は、調子が悪い。',low:true}
+    };
+    var info=titles[hits]||titles[0];
+    var w=document.getElementById('medalWrap');
+    w.innerHTML='<div class="medal"><div class="rate">'+hits+'<small>/'+total+'</small></div>'+
+        '<div class="of">的中</div></div>'+
+      '<div class="title-text'+(info.low?' low':'')+'">'+info.t+'</div>'+
+      '<div class="title-sub">'+info.s+'</div>';
+    w.style.display='block';
+    w.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  // 物語にする（⑧）
+  async function generateStory(){
+    if(!last) return;
+    var btn=document.getElementById('storyBtn');
+    var area=document.getElementById('storyArea');
+    btn.disabled=true;
+    area.innerHTML='<div class="story-loading">探偵が筆を執っている…</div>';
+    var p=PERSONAS[last.persona]||PERSONAS.holmes;
+    var ctx='【見立て】'+last.verdict+'\n【観察と推理】\n'+
+      last.clues.map(function(c){return '・'+c.observation+' → '+c.deduction;}).join('\n');
+    var sys='あなたは「'+p.name+'」と呼ばれる名探偵です。'+p.voice+' あなたの着眼点: '+p.lens+
+      ' 次の観察と推理をもとに、200字程度の短いミステリー掌編を、その探偵の一人称で書いてください。'+
+      'タイトル・前置き・解説・鉤括弧の見出しは不要。物語の本文のみを返すこと。';
+    try{
+      var res=await fetch('/api/claude',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          systemPrompt:sys, userPrompt:ctx, maxTokens:1000
+        })
+      });
+      var data=await res.json();
+      if(!res.ok){ throw new Error('執筆失敗'); }
+      var story=(data.content||[]).filter(function(b){return b.type==='text';})
+                .map(function(b){return b.text;}).join('').trim();
+      area.innerHTML='<div class="story-panel" style="display:block">'+
+        '<div class="lab">A Short Mystery — '+esc(p.name)+'の手記</div>'+
+        '<div class="body">'+esc(story)+'</div></div>';
+      btn.textContent='もう一度、物語にする';
+      area.querySelector('.story-panel').scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(e){
+      console.error(e);
+      area.innerHTML='<div class="story-loading">物語は、まだ言葉にならなかった。もう一度試したまえ。</div>';
+    }finally{ btn.disabled=false; }
+  }
+})();
+</script>
+</body>
+</html>
